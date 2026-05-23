@@ -143,12 +143,12 @@ end
 -- ║     Create Window     ║
 -- ╚══════════════════════╝
 local Window = Fluent:CreateWindow({
-    Title       = "Shadow Hub - early access",
-    SubTitle    = "Premium v2.1.0 - by shadow",
+    Title       = "Shadow Hub",
+    SubTitle    = "Premium v2.1.0",
     TabWidth    = 130,
     Size        = UDim2.fromOffset(620, 500),
     Acrylic     = false,
-    Theme       = "Amethyst",
+    Theme       = "Dark",
     MinimizeKey = Enum.KeyCode.RightControl,
 })
 
@@ -165,32 +165,196 @@ Home:AddParagraph({
         .. "Settings are auto-saved and reloaded on next run."
 })
 
--- Live stats (updated each second via Heartbeat)
-local sFps  = Home:AddParagraph({ Title = "FPS",      Content = "-- fps" })
-local sPing = Home:AddParagraph({ Title = "Ping",     Content = "-- ms" })
-local sGrav = Home:AddParagraph({ Title = "Gravity",  Content = "196" })
-local sPos  = Home:AddParagraph({ Title = "Position", Content = "X: --  Y: --  Z: --" })
+-- Floating stat widgets (FPS, Ping, Position) --
+-- Each widget is a small draggable label with an X close button.
+-- Built directly in the ScreenGui so they appear over the game.
 
-do
-    local t = 0
-    RunService.Heartbeat:Connect(function(dt)
-        t = t + dt; if t < 1 then return end; t = 0
-        pcall(function()
-            local _fStr = tostring(fpsVal)..(fpsVal>=60 and "  (Smooth)" or fpsVal>=30 and "  (OK)" or "  (Low)")
-            local _pStr = tostring(pingVal).." ms"..(pingVal<80 and "  (Good)" or pingVal<150 and "  (OK)" or "  (High)")
-            local _gStr = tostring(math.floor(workspace.Gravity))
-            pcall(function() sFps.Title.Text  = "FPS:  " .. _fStr  end)
-            pcall(function() sPing.Title.Text = "Ping: " .. _pStr  end)
-            pcall(function() sGrav.Title.Text = "Gravity: " .. _gStr end)
-            local r = Root()
-            if r then
-                local p = r.Position
-                local _posStr = "X: "..math.floor(p.X).."   Y: "..math.floor(p.Y).."   Z: "..math.floor(p.Z)
-                pcall(function() sPos.Title.Text = "Position:  ".._posStr end)
-            end
-        end)
+local _statWidgets = {}  -- track open widgets to avoid duplicates
+
+local function MakeStatWidget(labelId, titleText, getValueFn, color)
+    -- Only one widget per stat at a time
+    if _statWidgets[labelId] then
+        _statWidgets[labelId]:Destroy()
+        _statWidgets[labelId] = nil
+        return
+    end
+
+    -- Find the best parent: CoreGui > PlayerGui
+    local sg
+    pcall(function()
+        sg = game:GetService("CoreGui")
+    end)
+    if not sg then
+        sg = plr:WaitForChild("PlayerGui", 10)
+    end
+
+    -- Outer wrapper (ScreenGui per widget so they stack independently)
+    local wGui = Instance.new("ScreenGui")
+    wGui.Name = "SHStat_" .. labelId
+    wGui.ResetOnSpawn = false
+    wGui.DisplayOrder = 700
+    wGui.IgnoreGuiInset = true
+    wGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    wGui.Parent = sg
+    _statWidgets[labelId] = wGui
+
+    -- Main pill frame
+    local frame = Instance.new("Frame", wGui)
+    frame.Size = UDim2.new(0, 120, 0, 28)
+    frame.Position = UDim2.new(0.02, 0, 0.12 + (#_statWidgets * 0.06), 0)
+    frame.BackgroundColor3 = Color3.fromRGB(10, 5, 22)
+    frame.BackgroundTransparency = 0.12
+    frame.BorderSizePixel = 0
+    frame.ZIndex = 10
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 20)
+    local stroke = Instance.new("UIStroke", frame)
+    stroke.Color = color or Color3.fromRGB(130, 50, 255)
+    stroke.Thickness = 1.5
+
+    -- Title label (e.g. "FPS")
+    local titleLbl = Instance.new("TextLabel", frame)
+    titleLbl.Size = UDim2.new(0, 34, 1, 0)
+    titleLbl.Position = UDim2.new(0, 6, 0, 0)
+    titleLbl.BackgroundTransparency = 1
+    titleLbl.Text = titleText
+    titleLbl.Font = Enum.Font.GothamBlack
+    titleLbl.TextSize = 11
+    titleLbl.TextColor3 = color or Color3.fromRGB(160, 90, 255)
+    titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+    titleLbl.BorderSizePixel = 0
+    titleLbl.ZIndex = 11
+
+    -- Value label
+    local valueLbl = Instance.new("TextLabel", frame)
+    valueLbl.Size = UDim2.new(1, -60, 1, 0)
+    valueLbl.Position = UDim2.new(0, 40, 0, 0)
+    valueLbl.BackgroundTransparency = 1
+    valueLbl.Text = "..."
+    valueLbl.Font = Enum.Font.GothamBold
+    valueLbl.TextSize = 11
+    valueLbl.TextColor3 = Color3.fromRGB(230, 230, 230)
+    valueLbl.TextXAlignment = Enum.TextXAlignment.Left
+    valueLbl.BorderSizePixel = 0
+    valueLbl.ZIndex = 11
+
+    -- Close (X) button
+    local closeBtn = Instance.new("TextButton", frame)
+    closeBtn.Size = UDim2.new(0, 18, 0, 18)
+    closeBtn.Position = UDim2.new(1, -20, 0.5, -9)
+    closeBtn.BackgroundColor3 = Color3.fromRGB(239, 68, 68)
+    closeBtn.BackgroundTransparency = 0.25
+    closeBtn.Text = "x"
+    closeBtn.Font = Enum.Font.GothamBold
+    closeBtn.TextSize = 10
+    closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    closeBtn.AutoButtonColor = false
+    closeBtn.BorderSizePixel = 0
+    closeBtn.ZIndex = 12
+    Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 9)
+    closeBtn.MouseButton1Click:Connect(function()
+        _statWidgets[labelId] = nil
+        wGui:Destroy()
+    end)
+
+    -- Drag support (PC + Mobile)
+    local dragging = false
+    local dragStart = Vector2.zero
+    local frameStart = Vector2.zero
+    frame.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+        or inp.UserInputType == Enum.UserInputType.Touch then
+            dragging   = true
+            dragStart  = Vector2.new(inp.Position.X, inp.Position.Y)
+            frameStart = Vector2.new(frame.Position.X.Offset, frame.Position.Y.Offset)
+        end
+    end)
+    game:GetService("UserInputService").InputChanged:Connect(function(inp)
+        if not dragging then return end
+        if inp.UserInputType == Enum.UserInputType.MouseMovement
+        or inp.UserInputType == Enum.UserInputType.Touch then
+            local delta = Vector2.new(inp.Position.X, inp.Position.Y) - dragStart
+            frame.Position = UDim2.new(
+                frame.Position.X.Scale, frameStart.X + delta.X,
+                frame.Position.Y.Scale, frameStart.Y + delta.Y)
+        end
+    end)
+    game:GetService("UserInputService").InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+        or inp.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
+    -- Live update loop (Heartbeat, every 0.5 s)
+    local updateTimer = 0
+    local conn; conn = RunService.Heartbeat:Connect(function(dt)
+        if not wGui.Parent then conn:Disconnect(); return end
+        updateTimer = updateTimer + dt
+        if updateTimer < 0.5 then return end
+        updateTimer = 0
+        local ok, val = pcall(getValueFn)
+        if ok then valueLbl.Text = val end
     end)
 end
+
+-- Button: Show FPS Widget
+Home:AddButton({ Title = "Show FPS Widget",
+    Description = "Opens a small draggable FPS counter. Press again to close.",
+    Callback = function()
+        MakeStatWidget("fps", "FPS", function()
+            local col
+            if fpsVal >= 60 then col = Color3.fromRGB(34,197,94)
+            elseif fpsVal >= 30 then col = Color3.fromRGB(234,179,8)
+            else col = Color3.fromRGB(239,68,68) end
+            return tostring(fpsVal)
+        end, Color3.fromRGB(34,197,94))
+    end
+})
+
+-- Button: Show Ping Widget
+Home:AddButton({ Title = "Show Ping Widget",
+    Description = "Opens a small draggable Ping counter. Press again to close.",
+    Callback = function()
+        MakeStatWidget("ping", "PING", function()
+            return tostring(pingVal) .. " ms"
+        end, Color3.fromRGB(6,182,212))
+    end
+})
+
+-- Button: Show Position Widget
+Home:AddButton({ Title = "Show Position Widget",
+    Description = "Opens a small draggable XYZ position tracker. Press again to close.",
+    Callback = function()
+        MakeStatWidget("pos", "POS", function()
+            local r = Root()
+            if not r then return "-- --  --" end
+            local p = r.Position
+            return math.floor(p.X)..","..math.floor(p.Y)..","..math.floor(p.Z)
+        end, Color3.fromRGB(130,50,255))
+    end
+})
+
+-- Button: Show Gravity Widget  
+Home:AddButton({ Title = "Show Gravity Widget",
+    Description = "Opens a small draggable gravity display. Press again to close.",
+    Callback = function()
+        MakeStatWidget("grav", "GRAV", function()
+            return tostring(math.floor(workspace.Gravity))
+        end, Color3.fromRGB(234,179,8))
+    end
+})
+
+-- Button: Close all stat widgets
+Home:AddButton({ Title = "Close All Stat Widgets",
+    Description = "Closes every open stat widget",
+    Callback = function()
+        for key, gui in pairs(_statWidgets) do
+            pcall(function() gui:Destroy() end)
+            _statWidgets[key] = nil
+        end
+        Notify("Widgets","All stat widgets closed.",2)
+    end
+})
 
 Home:AddButton({ Title = "Speed Boost  (WalkSpeed = 100)",
     Description = "Set your speed to 100 instantly",
@@ -1329,34 +1493,44 @@ end })
 -- ═══════════════════════════════════════════════
 local Utility = Window:AddTab({ Title = "Utility", Icon = "settings-2" })
 
-local uFps  = Utility:AddParagraph({ Title="FPS",      Content="--" })
-local uPing = Utility:AddParagraph({ Title="Ping",     Content="--" })
-local uGrav = Utility:AddParagraph({ Title="Gravity",  Content="196" })
-local uPos  = Utility:AddParagraph({ Title="Position", Content="--" })
-local uPlrs = Utility:AddParagraph({ Title="Players",  Content="--" })
-
-do
-    local t2 = 0
-    RunService.Heartbeat:Connect(function(dt)
-        t2 = t2 + dt; if t2 < 1 then return end; t2 = 0
-        pcall(function()
-            local _fStr2 = tostring(fpsVal)..(fpsVal>=60 and "  (Smooth)" or fpsVal>=30 and "  (OK)" or "  (Low)")
-            local _pStr2 = tostring(pingVal).." ms"..(pingVal<80 and "  (Good)" or pingVal<150 and "  (OK)" or "  (High)")
-            pcall(function() uFps.Title.Text  = "FPS:  " .. _fStr2  end)
-            pcall(function() uPing.Title.Text = "Ping: " .. _pStr2  end)
-            pcall(function() uGrav.Title.Text = "Gravity: " .. tostring(math.floor(workspace.Gravity)) end)
-            local r = Root()
-            if r then
-                local p = r.Position
-                local _posStr2 = "X: "..math.floor(p.X).."   Y: "..math.floor(p.Y).."   Z: "..math.floor(p.Z)
-                pcall(function() uPos.Title.Text = "Position:  ".._posStr2 end)
-            end
-            local names = {}
-            for _, p in pairs(Players:GetPlayers()) do table.insert(names, p.Name) end
-            pcall(function() uPlrs.Title.Text = "Players ("..#names.."):  "..table.concat(names, "  |  ") end)
-        end)
-    end)
-end
+-- Stat widgets are created by MakeStatWidget() defined in Home tab.
+-- These buttons are shortcuts to the same widgets.
+Utility:AddButton({ Title = "Show FPS Widget",
+    Description = "Small draggable FPS counter. Press again to close.",
+    Callback = function()
+        MakeStatWidget("fps","FPS",function() return tostring(fpsVal) end, Color3.fromRGB(34,197,94))
+    end
+})
+Utility:AddButton({ Title = "Show Ping Widget",
+    Description = "Small draggable Ping counter. Press again to close.",
+    Callback = function()
+        MakeStatWidget("ping","PING",function() return tostring(pingVal).." ms" end, Color3.fromRGB(6,182,212))
+    end
+})
+Utility:AddButton({ Title = "Show Position Widget",
+    Description = "Small draggable XYZ tracker. Press again to close.",
+    Callback = function()
+        MakeStatWidget("pos","POS",function()
+            local r=Root(); if not r then return "--,--,--" end
+            local p=r.Position; return math.floor(p.X)..","..math.floor(p.Y)..","..math.floor(p.Z)
+        end, Color3.fromRGB(130,50,255))
+    end
+})
+Utility:AddButton({ Title = "Show Gravity Widget",
+    Description = "Small draggable gravity display. Press again to close.",
+    Callback = function()
+        MakeStatWidget("grav","GRAV",function() return tostring(math.floor(workspace.Gravity)) end, Color3.fromRGB(234,179,8))
+    end
+})
+Utility:AddButton({ Title = "Close All Stat Widgets",
+    Description = "Closes every open stat widget at once",
+    Callback = function()
+        for key,gui in pairs(_statWidgets) do
+            pcall(function() gui:Destroy() end); _statWidgets[key]=nil
+        end
+        Notify("Widgets","All widgets closed.",2)
+    end
+})
 
 Utility:AddButton({ Title="Copy Game ID",    Description="Copy PlaceId to clipboard",         Callback=function() pcall(function() setclipboard(tostring(game.PlaceId)) end); Notify("Copied","Game ID: "..game.PlaceId,3) end })
 Utility:AddButton({ Title="Copy Username",   Description="Copy your username to clipboard",    Callback=function() pcall(function() setclipboard(plr.Name) end);             Notify("Copied",plr.Name,2)                 end })
@@ -1438,7 +1612,7 @@ Info:AddParagraph({ Title="Teleport to Player",
 Info:AddParagraph({ Title="Executor Compatibility",
     Content="Tested working on:\n"
         .."Codex  ·  Fluxus  ·  Delta  ·  Solara  ·  Synapse-style\n"
-        .."If you encounter any issues, please report them on our Discord."
+        .."Also works as a LocalScript in Roblox Studio."
 })
 Info:AddParagraph({ Title="Disclaimer",
     Content="For educational and personal use only.\n"
