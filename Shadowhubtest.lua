@@ -6,8 +6,6 @@
     ╚══════════════════════════════════════════════════╝
 
     EXECUTOR: Paste entire script and Execute.
-    STUDIO:   Put in StarterPlayerScripts as LocalScript.
-
     NOTE: All sliders pass their value through the Callback
     parameter — Fluent handles the UI widget itself.
     All toggles pass true/false through Callback.
@@ -143,12 +141,12 @@ end
 -- ║     Create Window     ║
 -- ╚══════════════════════╝
 local Window = Fluent:CreateWindow({
-    Title       = "Shadow Hub",
-    SubTitle    = "Premium v2.1.0",
+    Title       = "Shadow Hub - early access",
+    SubTitle    = "Premium v2.1.0 - by Shadow",
     TabWidth    = 130,
     Size        = UDim2.fromOffset(620, 500),
     Acrylic     = false,
-    Theme       = "Dark",
+    Theme       = "Amethyst",
     MinimizeKey = Enum.KeyCode.RightControl,
 })
 
@@ -1569,11 +1567,11 @@ local Info = Window:AddTab({ Title = "Info", Icon = "info" })
 Info:AddParagraph({ Title="About Shadow Hub",
     Content="Shadow Hub v2.1.0 is a premium Roblox script hub built for PC and Mobile.\n\n"
         .."Tabs: Home · Player · Fly · Combat · Fun · Visual · Teleport · Utility · Info · Settings\n\n"
-        .."Built with the Fluent UI Library by dawid-scripts.\n"
+        .."Built with smooth ,powerful ui.\n"
         .."All settings auto-save via SaveManager."
 })
 Info:AddParagraph({ Title="Author",
-    Content="Created by the Shadow Hub team.\n"
+    Content="Created by the Shadow.\n"
         .."Join our Discord for keys, updates and support."
 })
 Info:AddParagraph({ Title="PC Controls",
@@ -1612,7 +1610,7 @@ Info:AddParagraph({ Title="Teleport to Player",
 Info:AddParagraph({ Title="Executor Compatibility",
     Content="Tested working on:\n"
         .."Codex  ·  Fluxus  ·  Delta  ·  Solara  ·  Synapse-style\n"
-        .."Also works as a LocalScript in Roblox Studio."
+        .."If the script didn't load properly execute it again."
 })
 Info:AddParagraph({ Title="Disclaimer",
     Content="For educational and personal use only.\n"
