@@ -6,6 +6,7 @@
     ╚══════════════════════════════════════════════════╝
 
     EXECUTOR: Paste entire script and Execute.
+    STUDIO:   Put in StarterPlayerScripts as LocalScript.
 
     NOTE: All sliders pass their value through the Callback
     parameter — Fluent handles the UI widget itself.
@@ -141,14 +142,20 @@ end
 -- ╔══════════════════════╗
 -- ║     Create Window     ║
 -- ╚══════════════════════╝
+-- SecondMinimizeKey is our own custom second hotkey.
+-- Fluent only supports one MinimizeKey natively, so we add a
+-- second one via UIS.InputBegan further below (after ToggleUI is defined).
+local _secondMinimizeKey = Enum.KeyCode.RightShift   -- default second key
+
 local Window = Fluent:CreateWindow({
     Title       = "Shadow Hub - early access",
-    SubTitle    = "Premium v2.1.0 - by shadow",
+    SubTitle    = "Premium v2.1.0 - by Shadow",
     TabWidth    = 130,
     Size        = UDim2.fromOffset(620, 500),
     Acrylic     = false,
     Theme       = "Amethyst",
-    MinimizeKey = Enum.KeyCode.RightControl,
+    MinimizeKey = Enum.KeyCode.RightControl,   -- first minimize key (Fluent built-in)
+    -- Second minimize key: RightShift (our listener, defined below)
 })
 
 -- ═══════════════════════════════════════════════
@@ -1568,7 +1575,7 @@ local Info = Window:AddTab({ Title = "Info", Icon = "info" })
 Info:AddParagraph({ Title="About Shadow Hub",
     Content="Shadow Hub v2.1.0 is a premium Roblox script hub built for PC and Mobile.\n\n"
         .."Tabs: Home · Player · Fly · Combat · Fun · Visual · Teleport · Utility · Info · Settings\n\n"
-        .."Built with the smooth , powerful UI Library.\n"
+        .."Built with smooth and powerful UI.\n"
         .."All settings auto-save via SaveManager."
 })
 Info:AddParagraph({ Title="Author",
@@ -1611,7 +1618,7 @@ Info:AddParagraph({ Title="Teleport to Player",
 Info:AddParagraph({ Title="Executor Compatibility",
     Content="Tested working on:\n"
         .."Codex  ·  Fluxus  ·  Delta  ·  Solara  ·  Synapse-style\n"
-        .."If you encountered any problem Executethe script again or contact support."
+        .."If something happened try executing the script again or contact support."
 })
 Info:AddParagraph({ Title="Disclaimer",
     Content="For educational and personal use only.\n"
@@ -1667,7 +1674,7 @@ Settings:AddButton({ Title="Reset All to Defaults",
 local _uiVisible     = true
 local _toggleBtnGui  = nil
 local _toggleBtnSize = "Medium"
-local _toggleBtnText = "^"   -- default icon text, user can change
+local _toggleBtnText = "S"   -- default icon text, user can change
 
 -- Size table: {width, height, textSize, cornerRadius}
 local _btnSizes = {
@@ -1709,9 +1716,16 @@ local function ToggleUI()
     end
 end
 
--- Also make RightControl still toggle (call our function instead)
+-- RightControl listener (mirrors Fluent's built-in MinimizeKey)
 game:GetService("UserInputService").InputBegan:Connect(function(inp, gp)
     if not gp and inp.KeyCode == Enum.KeyCode.RightControl then
+        ToggleUI()
+    end
+end)
+
+-- Second minimize key listener (default: RightShift, changeable from Settings)
+game:GetService("UserInputService").InputBegan:Connect(function(inp, gp)
+    if not gp and inp.KeyCode == _secondMinimizeKey then
         ToggleUI()
     end
 end)
@@ -1933,6 +1947,23 @@ Settings:AddInput("ToggleBtnLabel", {
             CreateToggleButton(_toggleBtnSize, _toggleBtnText)
         end
         Notify("Toggle Button", "Label set to: " .. v, 2)
+    end,
+})
+
+-- Second minimize key selector
+Settings:AddKeybind("SecondMinimizeKey", {
+    Title       = "Second Minimize Key",
+    Description = "An extra hotkey to show/hide the UI (in addition to RightControl)",
+    Mode        = "Hold",
+    Default     = "RightShift",
+    Callback    = function()
+        -- Called when key is pressed in keybind mode
+    end,
+    ChangedCallback = function(new)
+        pcall(function()
+            _secondMinimizeKey = Enum.KeyCode[new]
+            Notify("Minimize Key", "Second key set to " .. new, 3)
+        end)
     end,
 })
 
