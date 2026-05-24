@@ -6,6 +6,8 @@
     ╚══════════════════════════════════════════════════╝
 
     EXECUTOR: Paste entire script and Execute.
+    
+
     NOTE: All sliders pass their value through the Callback
     parameter — Fluent handles the UI widget itself.
     All toggles pass true/false through Callback.
@@ -1567,11 +1569,11 @@ local Info = Window:AddTab({ Title = "Info", Icon = "info" })
 Info:AddParagraph({ Title="About Shadow Hub",
     Content="Shadow Hub v2.1.0 is a premium Roblox script hub built for PC and Mobile.\n\n"
         .."Tabs: Home · Player · Fly · Combat · Fun · Visual · Teleport · Utility · Info · Settings\n\n"
-        .."Built with smooth ,powerful ui.\n"
+        .."Built with the smooth UI library.\n"
         .."All settings auto-save via SaveManager."
 })
 Info:AddParagraph({ Title="Author",
-    Content="Created by the Shadow.\n"
+    Content="Created by Shadow.\n"
         .."Join our Discord for keys, updates and support."
 })
 Info:AddParagraph({ Title="PC Controls",
@@ -1610,7 +1612,7 @@ Info:AddParagraph({ Title="Teleport to Player",
 Info:AddParagraph({ Title="Executor Compatibility",
     Content="Tested working on:\n"
         .."Codex  ·  Fluxus  ·  Delta  ·  Solara  ·  Synapse-style\n"
-        .."If the script didn't load properly execute it again."
+        .."If you found any proplem while executing the script execute it again or contact support."
 })
 Info:AddParagraph({ Title="Disclaimer",
     Content="For educational and personal use only.\n"
@@ -1655,6 +1657,247 @@ Settings:AddButton({ Title="Reset All to Defaults",
 -- ═══════════════════════════════════════════════
 --  Auto-load saved config + select Home tab
 -- ═══════════════════════════════════════════════
+-- ═══════════════════════════════════════════════════════════
+--  FLOATING TOGGLE BUTTON  (auto-spawns, draggable, closeable)
+--  Mobile players use this since RightControl isn't available.
+--  PC players can use either this or RightControl.
+-- ═══════════════════════════════════════════════════════════
+
+local _toggleBtnGui   = nil   -- the ScreenGui holding the button
+local _toggleBtnFrame = nil   -- the actual button frame
+local _toggleBtnSize  = "Medium"  -- "Small" | "Medium" | "Large" | "Hidden"
+
+-- Size definitions: {width, height, textSize, cornerRadius}
+local _btnSizes = {
+    Small  = { w=40,  h=40,  ts=16, cr=12 },
+    Medium = { w=54,  h=54,  ts=22, cr=16 },
+    Large  = { w=70,  h=70,  ts=28, cr=20 },
+}
+
+local function DestroyToggleButton()
+    if _toggleBtnGui then
+        pcall(function() _toggleBtnGui:Destroy() end)
+        _toggleBtnGui  = nil
+        _toggleBtnFrame = nil
+    end
+end
+
+local function CreateToggleButton(sizeName)
+    DestroyToggleButton()
+    local sz = _btnSizes[sizeName]
+    if not sz then return end  -- "Hidden" → don't create
+
+    -- Resolve GUI parent (CoreGui preferred for executor)
+    local guiParent
+    pcall(function() guiParent = game:GetService("CoreGui") end)
+    if not guiParent then guiParent = plr:WaitForChild("PlayerGui", 10) end
+
+    local sg = Instance.new("ScreenGui")
+    sg.Name           = "SHToggleBtn"
+    sg.ResetOnSpawn   = false
+    sg.DisplayOrder   = 850
+    sg.IgnoreGuiInset = true
+    sg.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    sg.Parent         = guiParent
+    _toggleBtnGui     = sg
+
+    -- Outer glow ring (decorative, slightly larger than button)
+    local glow = Instance.new("Frame", sg)
+    glow.Size             = UDim2.new(0, sz.w + 10, 0, sz.h + 10)
+    glow.Position         = UDim2.new(0, 10, 0.5, -(sz.h + 10)/2)
+    glow.BackgroundColor3 = Color3.fromRGB(130, 50, 255)
+    glow.BackgroundTransparency = 0.72
+    glow.BorderSizePixel  = 0
+    glow.ZIndex           = 1
+    Instance.new("UICorner", glow).CornerRadius = UDim.new(0, sz.cr + 5)
+
+    -- Pulse the glow
+    local function PulseGlow()
+        TweenService:Create(glow,
+            TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
+            {BackgroundTransparency = 0.50}):Play()
+        task.delay(1.2, function()
+            if not glow.Parent then return end
+            TweenService:Create(glow,
+                TweenInfo.new(1.2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
+                {BackgroundTransparency = 0.74}):Play()
+            task.delay(1.2, PulseGlow)
+        end)
+    end
+    PulseGlow()
+
+    -- Main button frame
+    local btn = Instance.new("Frame", sg)
+    btn.Name              = "ToggleBtn"
+    btn.Size              = UDim2.new(0, sz.w, 0, sz.h)
+    btn.Position          = UDim2.new(0, 15, 0.5, -sz.h/2)
+    btn.BackgroundColor3  = Color3.fromRGB(12, 6, 28)
+    btn.BackgroundTransparency = 0
+    btn.BorderSizePixel   = 0
+    btn.ZIndex            = 2
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, sz.cr)
+    local btnStroke = Instance.new("UIStroke", btn)
+    btnStroke.Color     = Color3.fromRGB(130, 50, 255)
+    btnStroke.Thickness = 2
+    _toggleBtnFrame = btn
+
+    -- Keep glow centred on button
+    btn:GetPropertyChangedSignal("Position"):Connect(function()
+        glow.Position = UDim2.new(
+            btn.Position.X.Scale,  btn.Position.X.Offset - 5,
+            btn.Position.Y.Scale,  btn.Position.Y.Offset - 5)
+    end)
+
+    -- Triangle logo label
+    local ico = Instance.new("TextLabel", btn)
+    ico.Size                  = UDim2.new(1, 0, 1, 0)
+    ico.BackgroundTransparency = 1
+    ico.Text                  = "^"
+    ico.Font                  = Enum.Font.GothamBlack
+    ico.TextSize              = sz.ts
+    ico.TextColor3            = Color3.fromRGB(160, 90, 255)
+    ico.TextXAlignment        = Enum.TextXAlignment.Center
+    ico.BorderSizePixel       = 0
+    ico.ZIndex                = 3
+
+    -- Pulse the icon colour
+    local function PulseIcon()
+        TweenService:Create(ico,
+            TweenInfo.new(1.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
+            {TextColor3 = Color3.fromRGB(200, 140, 255)}):Play()
+        task.delay(1.4, function()
+            if not ico.Parent then return end
+            TweenService:Create(ico,
+                TweenInfo.new(1.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut),
+                {TextColor3 = Color3.fromRGB(130, 50, 255)}):Play()
+            task.delay(1.4, PulseIcon)
+        end)
+    end
+    PulseIcon()
+
+    -- Invisible hit button on top
+    local hit = Instance.new("TextButton", btn)
+    hit.Size                   = UDim2.new(1, 0, 1, 0)
+    hit.BackgroundTransparency = 1
+    hit.Text                   = ""
+    hit.AutoButtonColor        = false
+    hit.BorderSizePixel        = 0
+    hit.ZIndex                 = 4
+
+    -- Hover effect
+    hit.MouseEnter:Connect(function()
+        TweenService:Create(btnStroke, TweenInfo.new(0.12), {Color = Color3.fromRGB(200,140,255), Thickness = 2.5}):Play()
+        TweenService:Create(btn, TweenInfo.new(0.12), {BackgroundColor3 = Color3.fromRGB(22,11,46)}):Play()
+    end)
+    hit.MouseLeave:Connect(function()
+        TweenService:Create(btnStroke, TweenInfo.new(0.12), {Color = Color3.fromRGB(130,50,255), Thickness = 2}):Play()
+        TweenService:Create(btn, TweenInfo.new(0.12), {BackgroundColor3 = Color3.fromRGB(12,6,28)}):Play()
+    end)
+
+    -- Toggle window visibility on click
+    local isMoving   = false
+    local clickStart = Vector2.zero
+    hit.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+        or inp.UserInputType == Enum.UserInputType.Touch then
+            isMoving   = false
+            clickStart = Vector2.new(inp.Position.X, inp.Position.Y)
+        end
+    end)
+    hit.InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+        or inp.UserInputType == Enum.UserInputType.Touch then
+            if not isMoving then
+                -- It was a tap/click, not a drag → toggle UI
+                local winFrame = nil
+                for _, v in pairs(game:GetService("CoreGui"):GetDescendants()) do
+                    if v.Name == "Fluent" then winFrame = v; break end
+                end
+                -- Fluent exposes minimize via its key, so simulate RightControl
+                pcall(function()
+                    local vim = game:GetService("VirtualInputManager")
+                    vim:SendKeyEvent(true,  Enum.KeyCode.RightControl, false, game)
+                    task.wait(0.02)
+                    vim:SendKeyEvent(false, Enum.KeyCode.RightControl, false, game)
+                end)
+            end
+        end
+    end)
+
+    -- Drag support
+    local dragging   = false
+    local dragStart  = Vector2.zero
+    local btnStart   = Vector2.zero
+
+    hit.InputBegan:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+        or inp.UserInputType == Enum.UserInputType.Touch then
+            dragging  = true
+            dragStart = Vector2.new(inp.Position.X, inp.Position.Y)
+            btnStart  = Vector2.new(btn.Position.X.Offset, btn.Position.Y.Offset)
+        end
+    end)
+
+    game:GetService("UserInputService").InputChanged:Connect(function(inp)
+        if not dragging then return end
+        if inp.UserInputType == Enum.UserInputType.MouseMovement
+        or inp.UserInputType == Enum.UserInputType.Touch then
+            local d = Vector2.new(inp.Position.X, inp.Position.Y) - dragStart
+            if d.Magnitude > 6 then isMoving = true end
+            if isMoving then
+                btn.Position = UDim2.new(
+                    btn.Position.X.Scale, btnStart.X + d.X,
+                    btn.Position.Y.Scale, btnStart.Y + d.Y)
+            end
+        end
+    end)
+
+    game:GetService("UserInputService").InputEnded:Connect(function(inp)
+        if inp.UserInputType == Enum.UserInputType.MouseButton1
+        or inp.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+end
+
+-- Spawn at default size immediately
+CreateToggleButton(_toggleBtnSize)
+
+-- ── Add controls to Settings tab ──────────────────────────────
+Settings:AddDropdown("ToggleBtnSize", {
+    Title       = "Toggle Button Size",
+    Description = "Controls the floating ^ button that shows/hides the UI",
+    Values      = { "Small", "Medium", "Large", "Hidden" },
+    Default     = "Medium",
+    Callback    = function(v)
+        _toggleBtnSize = v
+        if v == "Hidden" then
+            DestroyToggleButton()
+            Notify("Toggle Button", "Button hidden. Use RightControl to toggle the UI.", 4)
+        else
+            CreateToggleButton(v)
+            Notify("Toggle Button", "Size set to " .. v .. ".", 2)
+        end
+    end,
+})
+
+Settings:AddButton({ Title = "Show Toggle Button",
+    Description = "Re-adds the floating button if you hid it",
+    Callback = function()
+        if _toggleBtnSize == "Hidden" then _toggleBtnSize = "Medium" end
+        CreateToggleButton(_toggleBtnSize)
+        Notify("Toggle Button", "Button restored.", 2)
+    end
+})
+
+Settings:AddButton({ Title = "Hide Toggle Button",
+    Description = "Remove the floating ^ button from screen",
+    Callback = function()
+        DestroyToggleButton()
+        Notify("Toggle Button", "Button hidden. Use RightControl or re-enable from Settings.", 4)
+    end
+})
+
 SaveManager:LoadAutoloadConfig()
 Window:SelectTab(1)
 
