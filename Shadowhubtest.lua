@@ -1,22 +1,10 @@
 --[[
-    ╔══════════════════════════════════════════════════╗
-    ║        SHADOW HUB  |  Fluent UI  |  v2.1.0      ║
-    ║  Tabs: Home · Player · Fly · Combat · Fun        ║
-    ║        Visual · Teleport · Utility · Info · Settings ║
-    ╚══════════════════════════════════════════════════╝
-
-    EXECUTOR: Paste entire script and Execute.
-    STUDIO:   Put in StarterPlayerScripts as LocalScript.
-
-    NOTE: All sliders pass their value through the Callback
-    parameter — Fluent handles the UI widget itself.
-    All toggles pass true/false through Callback.
-    No custom UI is drawn on top of Fluent components.
+    SHADOW HUB
+    Made by Shadow
+    Version: 2.1.0
 ]]
 
--- ╔══════════════════════╗
--- ║  Load Fluent Library  ║
--- ╚══════════════════════╝
+
 local Fluent = loadstring(
     game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua")
 )()
@@ -29,9 +17,7 @@ local InterfaceManager = loadstring(
     game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua")
 )()
 
--- ╔══════════════════════╗
--- ║       Services        ║
--- ╚══════════════════════╝
+
 local Players          = game:GetService("Players")
 local RunService       = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -43,9 +29,7 @@ local VirtualUser      = game:GetService("VirtualUser")
 local plr   = Players.LocalPlayer
 local mouse = plr:GetMouse()
 
--- ╔══════════════════════╗
--- ║    Runtime State      ║
--- ╚══════════════════════╝
+
 -- Player
 local infJumpOn    = false
 local noclipOn     = false
@@ -115,9 +99,7 @@ RunService.Heartbeat:Connect(function()
     pcall(function() pingVal = math.floor(plr:GetNetworkPing() * 1000) end)
 end)
 
--- ╔══════════════════════╗
--- ║       Helpers         ║
--- ╚══════════════════════╝
+
 local function Hum()
     return plr.Character and plr.Character:FindFirstChildOfClass("Humanoid")
 end
@@ -139,23 +121,18 @@ local function GetPlayerNames()
     return t
 end
 
--- ╔══════════════════════╗
--- ║     Create Window     ║
--- ╚══════════════════════╝
--- SecondMinimizeKey is our own custom second hotkey.
--- Fluent only supports one MinimizeKey natively, so we add a
--- second one via UIS.InputBegan further below (after ToggleUI is defined).
+
+
 local _secondMinimizeKey = Enum.KeyCode.RightShift   -- default second key
 
 local Window = Fluent:CreateWindow({
     Title       = "Shadow Hub - early access",
-    SubTitle    = "Premium v2.1.0 - by Shadow",
+    SubTitle    = "Premium  |  by Shadow",
     TabWidth    = 130,
     Size        = UDim2.fromOffset(620, 500),
     Acrylic     = false,
     Theme       = "Amethyst",
-    MinimizeKey = Enum.KeyCode.RightControl,   -- first minimize key (Fluent built-in)
-    -- Second minimize key: RightShift (our listener, defined below)
+    MinimizeKey = Enum.KeyCode.RightControl,
 })
 
 -- ═══════════════════════════════════════════════
@@ -165,10 +142,7 @@ local Home = Window:AddTab({ Title = "Home", Icon = "home" })
 
 Home:AddParagraph({
     Title   = "Shadow Hub  v2.1.0",
-    Content = "Welcome, " .. plr.Name .. "!\n\n"
-        .. "Use the tabs on the left to access all features.\n"
-        .. "Press RightControl to toggle the UI at any time.\n"
-        .. "Settings are auto-saved and reloaded on next run."
+    Content = "Welcome, " .. plr.Name .. "!\n\nUse the tabs to navigate.\nPress RightControl or RightShift to toggle the UI.\nYour settings save automatically."
 })
 
 -- Floating stat widgets (FPS, Ping, Position) --
@@ -597,12 +571,7 @@ Player:AddButton({ Title = "Reset Gravity  (196)",
 -- ═══════════════════════════════════════════════
 local FlyTab = Window:AddTab({ Title = "Fly", Icon = "send" })
 
-FlyTab:AddParagraph({
-    Title   = "How Fly Works",
-    Content = "PC:  WASD to move, Space = go up, LCtrl = go down.\n\n"
-        .. "Mobile:  Toggle fly on, then use your normal on-screen joystick to move in any direction. "
-        .. "Two floating  ^  v  buttons will appear on screen for altitude control."
-})
+
 
 FlyTab:AddSlider("FlySpeedSlider", {
     Title       = "Fly Speed",
@@ -745,11 +714,7 @@ FlyTab:AddToggle("FlyToggle", {
 -- ═══════════════════════════════════════════════
 local Combat = Window:AddTab({ Title = "Combat", Icon = "sword" })
 
-Combat:AddParagraph({
-    Title   = "Combat Features",
-    Content = "Kill Aura, Silent Aim, Anti-Knockback, Reach, Trigger Bot, Auto Click.\n"
-        .. "Adjust ranges with the sliders below each toggle.",
-})
+
 
 -- Kill Aura
 Combat:AddToggle("KillAuraToggle", {
@@ -1573,25 +1538,21 @@ Utility:AddButton({ Title="Destroy GUI", Description="Permanently remove Shadow 
 local Info = Window:AddTab({ Title = "Info", Icon = "info" })
 
 Info:AddParagraph({ Title="About Shadow Hub",
-    Content="Shadow Hub v2.1.0 is a premium Roblox script hub built for PC and Mobile.\n\n"
-        .."Tabs: Home · Player · Fly · Combat · Fun · Visual · Teleport · Utility · Info · Settings\n\n"
-        .."Built with smooth and powerful UI.\n"
-        .."All settings auto-save via SaveManager."
+    Content="Shadow Hub v2.1.0 is a premium Roblox script hub.
+
+Tabs: Home · Player · Fly · Combat · Fun · Visual · Teleport · Utility · Info · Settings
+
+All settings save automatically."
 })
 Info:AddParagraph({ Title="Author",
-    Content="Created by Shadow.\n"
-        .."Join our Discord for keys, updates and support."
+    Content="Made by Shadow.
+Version: 2.1.0"
 })
 Info:AddParagraph({ Title="PC Controls",
-    Content="RightControl  —  Toggle UI on / off\n"
-        .."Fly: WASD to move, Space = up, LCtrl = down\n"
-        .."Combat > Snap Aim — instantly look at nearest player"
+    Content="RightControl or RightShift  —  Toggle UI\nFloating button  —  Tap to toggle (mobile + PC)\nFly: WASD + Space / LCtrl"
 })
 Info:AddParagraph({ Title="Mobile Controls",
-    Content="Use the Fluent minimize button to show/hide the UI.\n"
-        .."Fly: Enable the toggle, then use the on-screen joystick.\n"
-        .."Two floating  ^  v  buttons appear for altitude.\n"
-        .."All sliders and toggles are fully touch-compatible."
+    Content="Tap the floating button on the left side of the screen to toggle the UI.\nFly: Enable the toggle, then use your on-screen joystick to move.\nThe  ^  and  v  buttons handle altitude."
 })
 Info:AddParagraph({ Title="Tabs Guide",
     Content="Home       —  Quick stats and fast actions\n"
@@ -1615,16 +1576,10 @@ Info:AddParagraph({ Title="Teleport to Player",
         .."Press Refresh if the list is outdated.\n"
         .."Press Select None to cancel."
 })
-Info:AddParagraph({ Title="Executor Compatibility",
-    Content="Tested working on:\n"
-        .."Codex  ·  Fluxus  ·  Delta  ·  Solara  ·  Synapse-style\n"
-        .."If something happened try executing the script again or contact support."
+Info:AddParagraph({ Title="Compatibility",
+    Content="Compatible with Codex, Fluxus, Delta, Solara and similar executors."
 })
-Info:AddParagraph({ Title="Disclaimer",
-    Content="For educational and personal use only.\n"
-        .."Shadow Hub is not responsible for bans or actions by Roblox.\n"
-        .."Use features responsibly."
-})
+
 
 -- ═══════════════════════════════════════════════
 --  TAB 10 — SETTINGS  (always last)
@@ -1665,13 +1620,9 @@ Settings:AddButton({ Title="Reset All to Defaults",
 -- ═══════════════════════════════════════════════
 -- ═══════════════════════════════════════════════════════════════
 --  FLOATING TOGGLE BUTTON
---  Works by finding the Fluent ScreenGui and toggling .Enabled.
---  No VirtualInputManager needed — 100% executor safe.
---  Draggable, customisable label, size controlled from Settings.
+
 -- ═══════════════════════════════════════════════════════════════
 
--- Track whether the Fluent UI is currently visible
-local _uiVisible     = true
 local _toggleBtnGui  = nil
 local _toggleBtnSize = "Medium"
 local _toggleBtnText = "S"   -- default icon text, user can change
@@ -1683,45 +1634,20 @@ local _btnSizes = {
     Large  = { w = 72,  h = 72,  ts = 28, cr = 22 },
 }
 
--- Find the Fluent ScreenGui by looking through CoreGui / PlayerGui
-local function FindFluentGui()
-    local function scanParent(parent)
-        for _, child in pairs(parent:GetChildren()) do
-            if child:IsA("ScreenGui") and child.Name ~= "SHToggleBtn"
-            and not child.Name:find("^SHStat_")
-            and not child.Name:find("^SHFlyMob")
-            and not child.Name:find("^SHCrosshair") then
-                -- Fluent window has at least one Frame child
-                for _, sub in pairs(child:GetChildren()) do
-                    if sub:IsA("Frame") then return child end
-                end
-            end
-        end
-        return nil
-    end
-    local result
-    pcall(function() result = scanParent(game:GetService("CoreGui")) end)
-    if not result then
-        pcall(function() result = scanParent(plr.PlayerGui) end)
-    end
-    return result
-end
 
--- Toggle the Fluent window visibility
+
+-- Toggle the UI by simulating the RightControl key press
+
 local function ToggleUI()
-    _uiVisible = not _uiVisible
-    local fluentGui = FindFluentGui()
-    if fluentGui then
-        fluentGui.Enabled = _uiVisible
-    end
+    pcall(function()
+        local vim = game:GetService("VirtualInputManager")
+        vim:SendKeyEvent(true,  Enum.KeyCode.RightControl, false, game)
+        task.wait(0.02)
+        vim:SendKeyEvent(false, Enum.KeyCode.RightControl, false, game)
+    end)
 end
 
--- RightControl listener (mirrors Fluent's built-in MinimizeKey)
-game:GetService("UserInputService").InputBegan:Connect(function(inp, gp)
-    if not gp and inp.KeyCode == Enum.KeyCode.RightControl then
-        ToggleUI()
-    end
-end)
+
 
 -- Second minimize key listener (default: RightShift, changeable from Settings)
 game:GetService("UserInputService").InputBegan:Connect(function(inp, gp)
@@ -1993,4 +1919,4 @@ Fluent:Notify({
     Duration = 5,
 })
 
-print("[Shadow Hub] v2.1.0 ready.")
+-- loaded
